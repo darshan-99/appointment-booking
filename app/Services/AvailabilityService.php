@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\DomainException;
 use App\Models\Doctor;
 use App\Models\DoctorAvailability;
 use App\Models\Slot;
@@ -75,7 +76,7 @@ class AvailabilityService
             ->exists();
 
         if ($overlaps) {
-            abort(422, 'This availability window overlaps with an existing schedule.');
+            throw new DomainException('This availability window overlaps with an existing schedule.', 422);
         }
     }
 }

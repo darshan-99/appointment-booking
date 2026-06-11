@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\AppointmentStatus;
 use App\Enums\SlotStatus;
+use App\Exceptions\DomainException;
 use App\Models\Appointment;
 use App\Models\Patient;
 use App\Models\Slot;
@@ -20,11 +21,11 @@ class AppointmentService
             $slot = Slot::lockForUpdate()->findOrFail($data['slot_id']);
 
             if ($slot->status === SlotStatus::BOOKED) {
-                abort(409, 'This slot has already been booked.');
+                throw new DomainException('This slot has already been booked.', 409);
             }
 
             if ($slot->date->isPast() && $slot->end_time < now()->format('H:i:s')) {
-                abort(422, 'Cannot book a slot in the past.');
+                throw new DomainException('Cannot book a slot in the past.', 422);
             }
 
             $slot->update(['status' => SlotStatus::BOOKED]);
@@ -37,7 +38,7 @@ class AppointmentService
                 'status'           => AppointmentStatus::BOOKED,
             ]);
 
-            $patient = Patient::find($data['patient_id']);
+            $patient = Patient::findOrFail($data['patient_id']);
             $patient->notify(new BookingNotification($appointment, 'booked'));
 
             return $appointment;
@@ -47,7 +48,7 @@ class AppointmentService
     public function cancel(Appointment $appointment, string $reason): Appointment
     {
         if ($appointment->status === AppointmentStatus::CANCELLED) {
-            abort(422, 'Appointment is already cancelled.');
+            throw new DomainException('Appointment is already cancelled.', 422);
         }
 
         DB::transaction(function () use ($appointment, $reason) {
@@ -68,18 +69,18 @@ class AppointmentService
     public function reschedule(Appointment $appointment, int $newSlotId): Appointment
     {
         if ($appointment->status === AppointmentStatus::CANCELLED) {
-            abort(422, 'Cannot reschedule a cancelled appointment.');
+            throw new DomainException('Cannot reschedule a cancelled appointment.', 422);
         }
 
         return DB::transaction(function () use ($appointment, $newSlotId) {
             $newSlot = Slot::lockForUpdate()->findOrFail($newSlotId);
 
             if ($newSlot->status === SlotStatus::BOOKED) {
-                abort(409, 'The requested slot is not available.');
+                throw new DomainException('The requested slot is not available.', 409);
             }
 
             if ($newSlot->date->isPast() && $newSlot->end_time < now()->format('H:i:s')) {
-                abort(422, 'Cannot reschedule to a slot in the past.');
+                throw new DomainException('Cannot reschedule to a slot in the past.', 422);
             }
 
             // Free old slot & book new slot
@@ -87,9 +88,9 @@ class AppointmentService
             $newSlot->update(['status' => SlotStatus::BOOKED]);
 
             $appointment->update([
-                'slot_id'  => $newSlot->id,
+                'slot_id'   => $newSlot->id,
                 'doctor_id' => $newSlot->doctor_id,
-                'status'   => AppointmentStatus::RESCHEDULED,
+                'status'    => AppointmentStatus::RESCHEDULED,
             ]);
 
             $patient = $appointment->patient;

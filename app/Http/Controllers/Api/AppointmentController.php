@@ -20,10 +20,11 @@ class AppointmentController extends Controller
     {
         $appointment = $this->appointmentService->book($request->validated());
 
-        return response()->json([
-            'message'     => 'Appointment booked successfully.',
-            'appointment' => $appointment->load('slot', 'doctor', 'patient'),
-        ], 201);
+        return $this->successResponse(
+            ['appointment' => $appointment->load('slot', 'doctor', 'patient')],
+            'Appointment booked successfully.',
+            201
+        );
     }
 
     public function cancel(CancelAppointmentRequest $request, Appointment $appointment): JsonResponse
@@ -33,10 +34,10 @@ class AppointmentController extends Controller
             $request->validated('cancellation_reason')
         );
 
-        return response()->json([
-            'message'     => 'Appointment cancelled successfully.',
-            'appointment' => $appointment->load('slot'),
-        ]);
+        return $this->successResponse(
+            ['appointment' => $appointment->load('slot')],
+            'Appointment cancelled successfully.'
+        );
     }
 
     public function reschedule(RescheduleAppointmentRequest $request, Appointment $appointment): JsonResponse
@@ -46,9 +47,9 @@ class AppointmentController extends Controller
             $request->validated('new_slot_id')
         );
 
-        return response()->json([
-            'message'     => 'Appointment rescheduled successfully.',
-            'appointment' => $appointment->load('slot', 'doctor'),
-        ]);
+        return $this->successResponse(
+            ['appointment' => $appointment->load('slot', 'doctor')],
+            'Appointment rescheduled successfully.'
+        );
     }
 }

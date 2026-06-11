@@ -22,10 +22,13 @@ class DoctorAvailabilityController extends Controller
             ->orderBy('start_time')
             ->get();
 
-        return response()->json([
-            'doctor'         => $doctor->only('id', 'name', 'specialization'),
-            'availabilities' => $availabilities,
-        ]);
+        return $this->successResponse(
+            [
+                'doctor'         => $doctor->only('id', 'name', 'specialization'),
+                'availabilities' => $availabilities,
+            ],
+            'Doctor availabilities retrieved successfully.'
+        );
     }
 
     public function store(StoreAvailabilityRequest $request, Doctor $doctor): JsonResponse
@@ -35,10 +38,11 @@ class DoctorAvailabilityController extends Controller
             $request->validated()
         );
 
-        return response()->json([
-            'message'      => 'Availability created successfully.',
-            'availability' => $availability->load('slots'),
-        ], 201);
+        return $this->successResponse(
+            ['availability' => $availability->load('slots')],
+            'Availability created successfully.',
+            201
+        );
     }
 
     public function slots(Request $request, Doctor $doctor): JsonResponse
@@ -52,10 +56,13 @@ class DoctorAvailabilityController extends Controller
             $request->date
         );
 
-        return response()->json([
-            'doctor' => $doctor->only('id', 'name', 'specialization'),
-            'date'   => $request->date,
-            'slots'  => $slots,
-        ]);
+        return $this->successResponse(
+            [
+                'doctor' => $doctor->only('id', 'name', 'specialization'),
+                'date'   => $request->date,
+                'slots'  => $slots,
+            ],
+            'Available slots retrieved successfully.'
+        );
     }
 }
